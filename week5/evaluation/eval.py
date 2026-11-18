@@ -1,4 +1,5 @@
 import sys
+import os
 import math
 from pydantic import BaseModel, Field
 from litellm import completion
@@ -10,7 +11,9 @@ from implementation.answer import answer_question, fetch_context
 
 load_dotenv(override=True)
 
-MODEL = "openai/gpt-6-luna"
+# MODEL = "openai/gpt-6-luna"
+MODEL = "openrouter/nvidia/nemotron-3.5-super-vl:free"
+
 db_name = "vector_db"
 
 
@@ -153,8 +156,17 @@ Provide detailed feedback and scores from 1 (very poor) to 5 (ideal) for each di
     ]
 
     # Call LLM judge with structured outputs (async)
-    judge_response = completion(model=MODEL, extra_body={"reasoning_effort": "none"}, messages=judge_messages, response_format=AnswerEval)
+    # judge_response = completion(model=MODEL, extra_body={"reasoning_effort": "none"}, messages=judge_messages, response_format=AnswerEval)
 
+    judge_response = completion(
+        model=MODEL,
+        extra_body={"reasoning_effort": "none"},
+        messages=judge_messages,
+        response_format=AnswerEval,
+        api_base="https://openrouter.ai/api/v1",
+        api_key=os.environ.get("OPENROUTER_API_KEY"),
+    )
+    
     answer_eval = AnswerEval.model_validate_json(judge_response.choices[0].message.content)
 
     return answer_eval, generated_answer, retrieved_docs
